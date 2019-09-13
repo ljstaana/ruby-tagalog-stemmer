@@ -1,58 +1,38 @@
 VALIDITY TEST (TAGALOG STEMMER) 
 ================================================
-TEST WORDS (26 word/s)
-#1 Word: ginagamot      | Expected: gamot   
-#2 Word: pinupuntirya   | Expected: puntirya
-#3 Word: ginugulo       | Expected: gulo    
-#4 Word: sinusuntok     | Expected: suntok  
-#5 Word: kinukumusta    | Expected: kumusta 
-#6 Word: sinusubaybayan | Expected: subaybay
-#7 Word: kumikita       | Expected: kita    
-#8 Word: sinusuportahan | Expected: suporta 
-#9 Word: nabibigo       | Expected: bigo    
-#10 Word: binibigkas     | Expected: bigkas  
-#11 Word: bubumukas      | Expected: bukas   
-#12 Word: binuksan       | Expected: bukas   
-#13 Word: paliparan      | Expected: lipad   
-#14 Word: kinakasabikan  | Expected: sabik   
-#15 Word: gumugunaw      | Expected: gunaw   
-#16 Word: binabastos     | Expected: bastos  
-#17 Word: pagkababae     | Expected: babae   
-#18 Word: pagkalalake    | Expected: lalake  
-#19 Word: minamahal      | Expected: mahal   
-#20 Word: hinuhugot      | Expected: hugot   
-#21 Word: sumusuporta    | Expected: suporta 
-#22 Word: itanong        | Expected: tanong  
-#23 Word: kasimbuluhan   | Expected: simbulo 
-#24 Word: minimaltrato   | Expected: maltrato
-#25 Word: pinagbibigkas  | Expected: bigkas  
-#26 Word: ipinapatungkol | Expected: tungkol 
+TEST WORDS (16 word/s)
+#1 Word: aaga           | Expected: aga   
+#2 Word: maaga          | Expected: aga   
+#3 Word: pinakamaagang  | Expected: aga   
+#4 Word: umaga          | Expected: aga   
+#5 Word: alamin         | Expected: alam  
+#6 Word: ipagbigay-alam | Expected: alam  
+#7 Word: kaalaman       | Expected: alam  
+#8 Word: kaalamang      | Expected: alam  
+#9 Word: naglalaman     | Expected: laman 
+#10 Word: nilalaman      | Expected: laman 
+#11 Word: pagmamahal     | Expected: mahal 
+#12 Word: ipinapaglaban  | Expected: laban 
+#13 Word: tinutumbok     | Expected: tumbok
+#14 Word: binibiro       | Expected: biro  
+#15 Word: ginagawa       | Expected: gawa  
+#16 Word: aanihin        | Expected: ani   
 
 
-RESULTS (92.3076923076923 %, 24 right, 2 wrong)
-#1 Word: ginagamot      | Expected: gamot    | Expected in Dictionary? true | Prediction: gamot     | CORRECT
-#2 Word: pinupuntirya   | Expected: puntirya | Expected in Dictionary? false | Prediction: puntirya  | CORRECT
-#3 Word: ginugulo       | Expected: gulo     | Expected in Dictionary? true | Prediction: gulo      | CORRECT
-#4 Word: sinusuntok     | Expected: suntok   | Expected in Dictionary? false | Prediction: suntok    | CORRECT
-#5 Word: kinukumusta    | Expected: kumusta  | Expected in Dictionary? false | Prediction: kumusta   | CORRECT
-#6 Word: sinusubaybayan | Expected: subaybay | Expected in Dictionary? true | Prediction: baybay    | WRONG
-#7 Word: kumikita       | Expected: kita     | Expected in Dictionary? true | Prediction: kita      | CORRECT
-#8 Word: sinusuportahan | Expected: suporta  | Expected in Dictionary? true | Prediction: suporta   | CORRECT
-#9 Word: nabibigo       | Expected: bigo     | Expected in Dictionary? true | Prediction: bigo      | CORRECT
-#10 Word: binibigkas     | Expected: bigkas   | Expected in Dictionary? true | Prediction: bigkas    | CORRECT
-#11 Word: bubumukas      | Expected: bukas    | Expected in Dictionary? false | Prediction: bukas     | CORRECT
-#12 Word: binuksan       | Expected: bukas    | Expected in Dictionary? true | Prediction: bukas     | CORRECT
-#13 Word: paliparan      | Expected: lipad    | Expected in Dictionary? true | Prediction: lipad     | CORRECT
-#14 Word: kinakasabikan  | Expected: sabik    | Expected in Dictionary? false | Prediction: sabik     | CORRECT
-#15 Word: gumugunaw      | Expected: gunaw    | Expected in Dictionary? false | Prediction: gunaw     | CORRECT
-#16 Word: binabastos     | Expected: bastos   | Expected in Dictionary? false | Prediction: bastos    | CORRECT
-#17 Word: pagkababae     | Expected: babae    | Expected in Dictionary? true | Prediction: babae     | CORRECT
-#18 Word: pagkalalake    | Expected: lalake   | Expected in Dictionary? false | Prediction: lalake    | CORRECT
-#19 Word: minamahal      | Expected: mahal    | Expected in Dictionary? true | Prediction: mahal     | CORRECT
-#20 Word: hinuhugot      | Expected: hugot    | Expected in Dictionary? true | Prediction: hinuhugot | WRONG
-#21 Word: sumusuporta    | Expected: suporta  | Expected in Dictionary? true | Prediction: suporta   | CORRECT
-#22 Word: itanong        | Expected: tanong   | Expected in Dictionary? true | Prediction: tanong    | CORRECT
-#23 Word: kasimbuluhan   | Expected: simbulo  | Expected in Dictionary? false | Prediction: simbulo   | CORRECT
-#24 Word: minimaltrato   | Expected: maltrato | Expected in Dictionary? false | Prediction: maltrato  | CORRECT
-#25 Word: pinagbibigkas  | Expected: bigkas   | Expected in Dictionary? false | Prediction: bigkas    | CORRECT
-#26 Word: ipinapatungkol | Expected: tungkol  | Expected in Dictionary? false | Prediction: tungkol   | CORRECT
+RESULTS (100.0 %, 16 right, 0 wrong)
+#1 Word: aaga           | Expected: aga    | Expected in Dictionary? false | Prediction: aga    | CORRECT
+#2 Word: maaga          | Expected: aga    | Expected in Dictionary? true | Prediction: aga    | CORRECT
+#3 Word: pinakamaagang  | Expected: aga    | Expected in Dictionary? true | Prediction: aga    | CORRECT
+#4 Word: umaga          | Expected: aga    | Expected in Dictionary? true | Prediction: aga    | CORRECT
+#5 Word: alamin         | Expected: alam   | Expected in Dictionary? true | Prediction: alam   | CORRECT
+#6 Word: ipagbigay-alam | Expected: alam   | Expected in Dictionary? true | Prediction: alam   | CORRECT
+#7 Word: kaalaman       | Expected: alam   | Expected in Dictionary? true | Prediction: alam   | CORRECT
+#8 Word: kaalamang      | Expected: alam   | Expected in Dictionary? true | Prediction: alam   | CORRECT
+#9 Word: naglalaman     | Expected: laman  | Expected in Dictionary? true | Prediction: laman  | CORRECT
+#10 Word: nilalaman      | Expected: laman  | Expected in Dictionary? true | Prediction: laman  | CORRECT
+#11 Word: pagmamahal     | Expected: mahal  | Expected in Dictionary? true | Prediction: mahal  | CORRECT
+#12 Word: ipinapaglaban  | Expected: laban  | Expected in Dictionary? false | Prediction: laban  | CORRECT
+#13 Word: tinutumbok     | Expected: tumbok | Expected in Dictionary? false | Prediction: tumbok | CORRECT
+#14 Word: binibiro       | Expected: biro   | Expected in Dictionary? false | Prediction: biro   | CORRECT
+#15 Word: ginagawa       | Expected: gawa   | Expected in Dictionary? true | Prediction: gawa   | CORRECT
+#16 Word: aanihin        | Expected: ani    | Expected in Dictionary? true | Prediction: ani    | CORRECT

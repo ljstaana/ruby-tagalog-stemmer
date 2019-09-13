@@ -15,7 +15,7 @@ class Stemmer
         @syllabicator = syllabicator
         @options = options
 
-        @verbose = false
+        @verbose = options[:verbose]
 
         # hash dictioanry for speed 
         @words = {} 
@@ -26,6 +26,16 @@ class Stemmer
         wordlist.each do |word| 
             @words[word] = true
         end
+
+        @clusters = treefy([
+            "bl", "br", 
+            "dr", "dy",
+            "gr",
+            "kr", "ky",
+            "pl", "pr",
+            "sw",
+            "tr", "ts",
+            "sh"])
 
 
         @prefixes = [
@@ -205,10 +215,12 @@ class Stemmer
     def prefix_match(word)
         prefix_matches = [] 
         @prefixes.each do |prefix|
-            # check if word matches prefix 
-            word_part = word[0..prefix.length-1]
-            if prefix == word_part then
-                prefix_matches.push(prefix)
+            if prefix.length < word.length then
+                # check if word matches prefix 
+                word_part = word[0..prefix.length-1]
+                if prefix == word_part then
+                    prefix_matches.push(prefix)
+                end
             end
         end
         prefix_matches
@@ -219,10 +231,12 @@ class Stemmer
     def suffix_match(word)
         suffix_matches = []
         @suffixes.each do |suffix| 
-            # check if word matches suffix
-            word_part = word[-suffix.length..-1]
-            if suffix == word_part then 
-                suffix_matches.push(suffix)
+            if suffix.length < word.length then
+                # check if word matches suffix
+                word_part = word[-suffix.length..-1]
+                if suffix == word_part then 
+                    suffix_matches.push(suffix)
+                end
             end
         end
         suffix_matches
@@ -234,7 +248,7 @@ class Stemmer
         infix_matches = [] 
         @infixes.each do |infix| 
             # check if word has infix after the first consonant
-            word_part = word.include?(infix)
+            word_part = word.index(infix)
             if word_part then 
                 infix_matches.push(infix)
             end
@@ -245,19 +259,20 @@ class Stemmer
     # removes specific fixes from a word
     def remove_fixes(word, prefix, infix, suffix)
 
+        word_t = word.dup
         if prefix != nil then 
-            word = word.gsub(/^#{prefix}/, "")
+            word_t[0..prefix.length-1] = ""
         end
 
         if infix != nil then 
-            word = word.gsub(/#{infix}/, "")
+            word_t = word_t.sub(/#{infix}/, "")
         end
 
         if suffix != nil then 
-            word = word.gsub(/#{suffix}$/, "")
+            word_t[-suffix.length..-1] = ""
         end
 
-        word
+        word_t
     end
 
     # gets the first consonant in the word (retuns index)
@@ -292,17 +307,14 @@ class Stemmer
         no_dups = []
 
         if (root[0] == root[1])
-            root_t = root.clone
-            root_t[0] = ""
-            no_dups.push(root_t)
+            no_dups.push(root[1..-1])
         end        
      
         if root_syls.length >= 3 then 
             if (is_consonant(root[0]) && 
-                is_vowel(root[1])) 
-                root_t = root.dup
-                root_t[0..1] = "" 
-                no_dups.push(root_t)
+                is_vowel(root[1]))
+                root_t = root.dup 
+                no_dups.push(root_t[2..-1])
             end
         end
 
@@ -313,15 +325,20 @@ class Stemmer
        
         # approach 1: reduplicates the first consonant 
         # and the first vowel of the term
-        first_cons = first_consonant(root)
-        first_vow = first_vowel(root)
-        if (first_vow - first_cons == 1 && 
-            tree_match(@clusters, first_cons + 1, root))
-            root_t = root.clone
-            root_t[first_cons..first_vow] = "" 
-            no_dups.push(root_t)
+        if root.length > 2 then 
+            first_cons = first_consonant(root)
+            first_vow = first_vowel(root)
+            if first_cons && first_vow  then 
+                if (first_vow - first_cons == 1 && 
+                    tree_match(@clusters, first_cons + 1, root))
+                    root_t = root.clone
+                    root_t[first_cons..first_vow] = "" 
+                    no_dups.push(root_t)
+                end
+            end
+        else
+            return [] 
         end
-
 
         # approach 2: reduplicates the cluster of consonants
         # including the succeeding vowel of the stem
@@ -355,6 +372,7 @@ class Stemmer
         word_reverts = []
 
         word_t = word.clone
+        
         
         # D-R ASSIMILATION
         # dapat - marapat
@@ -466,6 +484,19 @@ class Stemmer
             end
         end
 
+        if (suffix == "ng" && 
+            (word_t[-1] == "a"))
+            out  "\t" * 4 + "Handling nil-A Assimilation\n"
+            word_t[-1] = ""
+            if !@seen[word_t] then
+                word_reverts.push(word_t)
+            end
+        end
+
+        if (suffix == "hin" || suffix == "han") then 
+            word_reverts.push(word + "i")
+        end
+
         # O-U ASSIMILATION
         # if there is a suffix 
         # change the last u to an o
@@ -500,9 +531,7 @@ class Stemmer
     def accept_state(candidate, original)
         out  "\t" * 4 + "> Checking accept state for stemmed #{candidate} for #{original}\n"
         state = true
-        # "if the form starts with a vowel, then
-        # at least three letters must remain after stemming
-        # and at least one one of these must be a consonant"
+       
         if is_vowel(original[0]) then 
             shorter_than_three = candidate.length < 3
             if (shorter_than_three || has_no_vowel(candidate)) then
@@ -512,17 +541,15 @@ class Stemmer
             out  "\t" * 4 + "REJECT CONDITIONS\n"
             out  "\t" * 4 + "shorter_than_three: #{shorter_than_three}\n"
             out  "\t" * 4 + "has_no_vowel: #{has_no_vowel(candidate)}\n"
-        # "if the form starts with a consonant, then at least four 
-        #  characters must remain after stemming and at least one 
-        #  of these letters must be a vowel"
+    
         else 
-            shorter_than_four = candidate.length < 4
-            if (shorter_than_four || has_no_consonant(candidate)) then 
+            shorter_than_three = candidate.length < 3
+            if (shorter_than_three || has_no_consonant(candidate)) then 
                 state = false
             end
             out  "\t" * 4 + "Starts with a consonant\n"
             out  "\t" * 4 + "REJECT CONDITIONS\n"
-            out  "\t" * 4 + "shorter_than_four: #{shorter_than_four}\n"
+            out  "\t" * 4 + "shorter_than_three: #{shorter_than_three}\n"
             out  "\t" * 4 + "has_no_consonant: #{has_no_consonant(candidate)}\n"
         end
         out  "\t" * 4 + ":: State: #{state}\n"
@@ -565,7 +592,34 @@ class Stemmer
     # filters a set of words by the accepted conditions only
     def accepts_only(candidates, original)
         final = []
-        
+
+        # remove words with beginning consonants (more than 2) that are not
+        # a consonant cluster
+        candidates_new = []
+        candidates.each do |candidate|
+            consonant_start = 0
+            candidate.length.times do |i| 
+                letter = candidate[i]
+                if is_consonant(letter) then 
+                    consonant_start += 1
+                else
+                    break 
+                end
+            end
+            # check if cluster
+            if consonant_start >= 2 then 
+                if tree_match(@clusters, 0, candidate) then 
+                    candidates_new.push(candidate)
+                end
+            else
+                candidates_new.push(candidate) 
+            end
+        end
+
+
+
+        candidates = candidates_new
+
         # handle partial reduplication
         candidates.each do |candidate| 
             candidates += handle_full_word_reduplication(candidate, original)
@@ -609,9 +663,17 @@ class Stemmer
                     
                     # remove current affixes from word
                     word_t = word.clone
+
                     word_t = remove_fixes(word_t, prefix, infix, suffix)
                    
                     out  "\t" * 3 + "word_after: #{word_t}\n"
+
+                    # special cases
+                    if prefix != nil then
+                        if (prefix[-1] == "g" && word_t[0] != "-" && is_vowel(word_t[0]))  then 
+                            next
+                        end
+                    end
 
                     # unassimilate word by prefix
                     if prefix then
@@ -619,6 +681,7 @@ class Stemmer
                         # add reverted words to candidates
                         candidates += reverts
                     end
+                    candidates.uniq
 
                     # unassimilate word by suffix 
                     if suffix then 
@@ -626,7 +689,7 @@ class Stemmer
                         # add reverted words to candidatesd
                         candidates += reverts
                     end
-
+                    candidates.uniq
 
                     # add word to candidates
                     candidates.push(word_t)
@@ -659,6 +722,7 @@ class Stemmer
         if @cache[word] then 
             return @cache[word]
         end
+ 
 
         prefix_matches = prefix_match(word)
         suffix_matches = suffix_match(word)
@@ -700,148 +764,170 @@ class Stemmer
         @seen = {}
         out  "Stemming Word `#{word}`\n"
         out  "===================================\n"
+     
         @word = word
-        
-        word = word.gsub("-", "")
-        results = do_stem(word, [])
+  
     
-        if word[0] == "i" then 
-            results = do_stem(word[1..-1], []) + results
-        end
+            if word.include? "-" then 
+                word = word.split("-")[1]
+            end
+
+            results = do_stem(word, [])
         
-        if (results.length == 1 && results[0] == word) then 
-            results = handle_partial_reduplication(word)
-        end
-
-        out  "RESULTS: #{results}\n"
-
-        # filter tagalog words only
-        final_results = []
-        aside = []
-        results.each do |result| 
-            # check if word is in dictionary 
-            if @words[result] then 
-                final_results.push(result)
-            else 
-                aside.push(result)
-            end
-        end
-        final_results = final_results.sort_by {|v| v.length}
-        final_results += aside
-
-        out  "TAGALOG WORDS: #{final_results}\n"
-
-        final_results
-    end
-
-    # validty test function - from a tsv file
-    def validity_test(test_file, report_file)
-        ifile = File.open(test_file, "r:UTF-8", &:read)
-        ofile = File.open(report_file, "w:UTF-8")
-
-        words = {} 
-
-        ifile.split("\n")[1..-1].each do |line| 
-            tokens = line.split(":")
-            words[tokens[0].strip] = tokens[1].strip
-        end
-        
-        ofile  "VALIDITY TEST (TAGALOG STEMMER) \n" 
-        ofile  "================================================\n"
-
-        # DISPLAY TEST WORDS
-        ofile  "TEST WORDS (#{words.length} word/s)\n"
-        i = 0
-        words.each do |word, correct| 
-            ofile  "##{i+1} Word: " + 
-                        word.ljust(words.keys.collect{|v| v.length}.max) + " | "
-            ofile  "Expected: " + 
-                        correct.ljust(words.values.collect{|v| v.length}.max) 
-            ofile  "\n"
-            i += 1
-        end
-
-        # MAKE TESTS 
-        results = {} 
-        score = 0 
-        total = words.length
-        ofile  "\n"
-        words.each do |word, correct| 
-            result = stem(word)[0]
-            if result == correct then 
-                score += 1
-            end
-            results[word] = result
-        end
-
-        # GET RESULTS 
-        accuracy = score * 1.0 /total 
-        ofile  "\n"
-
-        # DISPLAY RESULTS 
-        ofile  "RESULTS (#{accuracy * 100} %, #{score} right, #{total-score} wrong)\n"
-        i = 0
-        
-        words.each do |word, correct| 
-            result = results[word]
-            in_dict = @words[word]
-            if !in_dict then 
-                in_dict = false
+            if word[0] == "i" then 
+                results = do_stem(word[1..-1], []) + results
             end
 
-            ofile  "##{i+1} Word: " + 
-                        word.ljust(words.keys.collect{|v| v.length}.max) + " | "
-            ofile  "Expected: " + 
-                        correct.ljust(words.values.collect{|v| v.length}.max) + " | "
-            ofile  "Expected in Dictionary? " + 
-                        in_dict.to_s + " | "
-                
-            ofile  "Prediction: " + 
-                        result.ljust(results.values.collect{|v| v.length}.max)  + " | "
-            if result == correct then 
-                ofile  "CORRECT"
-            else
-                ofile  "WRONG" 
+            if (results.length == 1 && results[0] == word) then 
+                results = [word]
             end
-            ofile  "\n"
+
+            out  "RESULTS: #{results}\n"
+
+            # filter tagalog words only
+            final_results = []
+            aside = []
+            results.each do |result| 
+                # check if word is in dictionary 
+                if @words[result] then 
+                    final_results.push(result)
+                else 
+                    aside.push(result)
+                end
+            end
+
+            final_results = final_results.sort_by {|v| v.length}
+
+            final_results += aside
+
+            final_results+= accepts_only(final_results, word)
+
+            out  "TAGALOG WORDS: #{final_results}\n"
+
+            final_results
+         
+        end
+
+        def verbose= (val)
+            @verbose = val
+        end
+
+        # validty test function - from a tsv file
+        def validity_test(test_file, report_file)
+            ifile = File.open(test_file, "r:UTF-8", &:read)
+            ofile = File.open(report_file, "w:UTF-8")
+
+            words = {} 
+
+            ifile.split("\n")[1..-1].each do |line| 
+                tokens = line.split(":")
+                words[tokens[0].strip] = tokens[1].strip
+            end
             
-            i += 1
+            ofile << "VALIDITY TEST (TAGALOG STEMMER) \n" 
+            ofile  << "================================================\n"
+
+            # DISPLAY TEST WORDS
+            ofile  << "TEST WORDS (#{words.length} word/s)\n"
+            i = 0
+            words.each do |word, correct| 
+                ofile <<  "##{i+1} Word: " + 
+                            word.ljust(words.keys.collect{|v| v.length}.max) + " | "
+                ofile << "Expected: " + 
+                            correct.ljust(words.values.collect{|v| v.length}.max) 
+                ofile  << "\n"
+                i += 1
+            end
+
+            # MAKE TESTS 
+            results = {} 
+            score = 0 
+            total = words.length
+            ofile  << "\n"
+            words.each do |word, correct| 
+                result = stem(word)[0]
+                if result == correct then 
+                    score += 1
+                end
+                results[word] = result
+            end
+
+            # GET RESULTS 
+            accuracy = score * 1.0 /total 
+            ofile << "\n"
+
+            # DISPLAY RESULTS 
+            ofile << "RESULTS (#{accuracy * 100} %, #{score} right, #{total-score} wrong)\n"
+            i = 0
+            
+            words.each do |word, correct| 
+                result = results[word]
+                in_dict = @words[word]
+                if !in_dict then 
+                    in_dict = false
+                end
+
+                ofile << "##{i+1} Word: " + 
+                            word.ljust(words.keys.collect{|v| v.length}.max) + " | "
+                ofile << "Expected: " + 
+                            correct.ljust(words.values.collect{|v| v.length}.max) + " | "
+                ofile << "Expected in Dictionary? " + 
+                            in_dict.to_s + " | "
+                    
+                ofile << "Prediction: " + 
+                            result.ljust(results.values.collect{|v| v.length}.max)  + " | "
+                if result == correct then 
+                    ofile <<  "CORRECT"
+                else
+                    ofile  << "WRONG" 
+                end
+                ofile  << "\n"
+                
+                i += 1
+            end
         end
-    end
 
-        
-    # speed test function - please enter a lot like more than 
-    # 1000 words for more generalized results
-    def speedtest
-        ifile = File.open("wordlist", "r:UTF-8", &:read)
-        words = ifile.split("\n")
+            
+        # speed test function - please enter a lot like more than 
+        # 1000 words for more generalized results
+        def speedtest
+            ifile = File.open("wordlist", "r:UTF-8", &:read)
+            words = ifile.split("\n")
 
-        puts  "No display output, plain storage"
-        start_time = Time.now.to_i
-        store = {}
-        i = 0
-        stem_count = 0
-        words.each do |word|
-        
-            begin
-                word = word.downcase
-                stemmed = stem(word)
-                store[word] = stemmed[0]
-                print "Stem Count: #{stem_count} Cache Count: #{@cache.keys.length} Word: #{i}/#{words.length} #{word}  #{stemmed[0]}                                           \r"
-                stem_count += 1
-            rescue
-                store[word] = word
-            end 
-            $stdout.flush 
-            i += 1
-        end
-        end_time = Time.now.to_i
-        puts "Start time: " + start_time.to_s
-        puts "End time: " + end_time.to_s
-        puts "Total time: " + (end_time - start_time).to_s + " seconds"
-        puts "Total No. of Words: " + (words.length).to_s + " words"
+            puts  "No display output, plain storage"
+            start_time = Time.now.to_f
+            store = {}
+            i = 0
+            stem_count = 0
 
-        $out << JSON.pretty_generate(store)
+            last_mark = Time.now.to_f
+            words.each do |word|
+            
+                begin
+                    word = word.downcase
+                    stemmed = stem(word)
+                    store[word] = stemmed[0]
+                    delta = Time.now.to_f - last_mark
+                    print "Delta: #{delta.round(10)}  Stem Count: #{stem_count} Cache Count: #{@cache.keys.length} Word: #{i}/#{words.length} #{word}  #{stemmed[0]}                                           \r"
+                    stem_count += 1
+                rescue
+                    store[word] = word
+                end 
+                $stdout.flush 
+                i += 1
+                last_mark = Time.now.to_f
+            end
+            end_time = Time.now.to_f
+            delta = end_time - start_time
+            wps = words.length * 1.0 / delta 
+
+            puts "Start time: " + start_time.to_s
+            puts "End time: " + end_time.to_s
+            puts "Total time: " + delta.to_s + " seconds"
+            puts "Total No. of Words: " + (words.length).to_s + " words"
+            puts "Words per second: " + wps.to_s + "\n"
+            puts "Words per minute: " + (wps * 60).to_s + "\n"
+            $out << JSON.pretty_generate(store)
     end
 end
 
@@ -853,7 +939,10 @@ wordlist = File.open("wordlist", "r:UTF-8", &:read).split("\n")
 syllabicator = Syllabicator.new options
 stemmer = Stemmer.new syllabicator, options, wordlist
 
-# stemmer.validity_test("test_words.txt", "results.txt")
+ 
+# stemmer.stem("makialam")
+stemmer.verbose = true
+stemmer.validity_test("test_words.txt", "results.txt")
 
-
+stemmer.verbose = false
 stemmer.speedtest
